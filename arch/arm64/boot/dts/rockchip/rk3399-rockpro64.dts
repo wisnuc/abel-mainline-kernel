@@ -109,10 +109,11 @@
 		regulator-max-microvolt = <12000000>;
 	};
 
-	rt5640-sound {
+	es8316-sound {
+		status = "okay";
 		compatible = "simple-audio-card";
-		simple-audio-card,name = "rockchip,rt5640-codec";
 		simple-audio-card,format = "i2s";
+		simple-audio-card,name = "rockchip,es8316-codec";
 		simple-audio-card,mclk-fs = <256>;
 		simple-audio-card,widgets =
 			"Microphone", "Mic Jack",
@@ -122,13 +123,11 @@
 			"IN1P", "Mic Jack",
 			"Headphone Jack", "HPOL",
 			"Headphone Jack", "HPOR";
-
 		simple-audio-card,cpu {
 			sound-dai = <&i2s1>;
 		};
-
 		simple-audio-card,codec {
-			sound-dai = <&rt5640>;
+			sound-dai = <&es8316>;
 		};
 	};
 
@@ -178,13 +177,13 @@
 
 	vcc3v3_pcie: vcc3v3-pcie-regulator {
 		compatible = "regulator-fixed";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
 		enable-active-high;
 		gpio = <&gpio1 RK_PD0 GPIO_ACTIVE_HIGH>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&pcie_pwr_en>;
 		regulator-name = "vcc3v3_pcie";
-		regulator-always-on;
-		regulator-boot-on;
 		vin-supply = <&dc_12v>;
 	};
 
@@ -506,7 +505,7 @@
 		reg = <0x41>;
 		regulator-compatible = "fan53555-reg";
 		pinctrl-0 = <&vsel2_gpio>;
-		vsel-gpios = <&gpio1 RK_PB4 GPIO_ACTIVE_HIGH>;
+		vsel-gpios = <&gpio1 RK_PB6 GPIO_ACTIVE_HIGH>;
 		fcs,suspend-voltage-selector = <1>;
 		regulator-name = "vdd_gpu";
 		regulator-min-microvolt = <712500>;
@@ -527,15 +526,15 @@
 	i2c-scl-falling-time-ns = <15>;
 	status = "okay";
 
-	rt5640: rt5640@1c {
-		compatible = "realtek,rt5640";
-		reg = <0x1c>;
+	es8316: es8316@10 {
+		#sound-dai-cells = <0>;
+		compatible = "everest,es8316";
+		reg = <0x10>;
 		clocks = <&cru SCLK_I2S_8CH_OUT>;
 		clock-names = "mclk";
-		realtek,in1-differential;
-		#sound-dai-cells = <0>;
 		pinctrl-names = "default";
-		pinctrl-0 = <&rt5640_hpcon>;
+		pinctrl-0 = <&i2s_8ch_mclk>;
+		hp-det-gpio = <&gpio1 RK_PB5 GPIO_ACTIVE_LOW>;
 	};
 };
 
@@ -549,13 +548,6 @@
 	i2c-scl-rising-time-ns = <600>;
 	i2c-scl-falling-time-ns = <20>;
 	status = "okay";
-
-	accelerometer@68 {
-		compatible = "invensense,mpu6500";
-		reg = <0x68>;
-		interrupt-parent = <&gpio1>;
-		interrupts = <RK_PC6 IRQ_TYPE_EDGE_RISING>;
-	};
 };
 
 &i2s0 {
@@ -594,7 +586,8 @@
 	ep-gpios = <&gpio2 RK_PD4 GPIO_ACTIVE_HIGH>;
 	num-lanes = <4>;
 	pinctrl-names = "default";
-	pinctrl-0 = <&pcie_clkreqn_cpm>;
+	pinctrl-0 = <&pcie_clkreqn>;
+	vpcie3v3-supply = <&vcc3v3_pcie>;
 	status = "okay";
 };
 
@@ -607,12 +600,6 @@
 	buttons {
 		pwrbtn: pwrbtn {
 			rockchip,pins = <0 RK_PA5 RK_FUNC_GPIO &pcfg_pull_up>;
-		};
-	};
-
-	lcd-panel {
-		lcd_panel_reset: lcd-panel-reset {
-			rockchip,pins = <4 RK_PD6 RK_FUNC_GPIO &pcfg_pull_up>;
 		};
 	};
 
@@ -632,19 +619,13 @@
 		};
 
 		vsel2_gpio: vsel2-gpio {
-			rockchip,pins = <1 RK_PB4 RK_FUNC_GPIO &pcfg_pull_down>;
+			rockchip,pins = <1 RK_PB6 RK_FUNC_GPIO &pcfg_pull_down>;
 		};
 	};
 
 	sdio-pwrseq {
 		wifi_enable_h: wifi-enable-h {
 			rockchip,pins = <0 RK_PB2 RK_FUNC_GPIO &pcfg_pull_none>;
-		};
-	};
-
-	rt5640 {
-		rt5640_hpcon: rt5640-hpcon {
-			rockchip,pins = <4 RK_PC5 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 
@@ -688,8 +669,9 @@
 
 &sdhci {
 	bus-width = <8>;
-	mmc-hs400-1_8v;
-	mmc-hs400-enhanced-strobe;
+	//mmc-hs400-1_8v;
+	mmc-hs200-1_8v;
+	//mmc-hs400-enhanced-strobe;
 	non-removable;
 	status = "okay";
 };
